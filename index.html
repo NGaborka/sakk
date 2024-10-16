@@ -85,7 +85,7 @@
             ["♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"]
         ];
 
-        let tabla = JSON.parse(JSON.stringify(eredetiTabla)); // Deep copy of the original table
+        let tabla = JSON.parse(JSON.stringify(eredetiTabla));
         let leutottFeherBabuk = [];
         let leutottFeketeBabuk = [];
 
@@ -144,27 +144,26 @@
             const babu = tabla[kezdoX][kezdoY];
             const celMezo = tabla[celX][celY];
 
-            // Nem léphet ugyanarra a színre
             if (babu.toUpperCase() === celMezo.toUpperCase()) return false;
 
             switch (babu) {
-                case "♙": // Fehér gyalog
-                case "♟": // Fekete gyalog
+                case "♙":
+                case "♟":
                     return ervenyesGyalogLepes(kezdoX, kezdoY, celX, celY, babu);
-                case "♜": // Bástya
-                case "♖": // Bástya
+                case "♜":
+                case "♖":
                     return ervenyesBastyaLepes(kezdoX, kezdoY, celX, celY);
-                case "♞": // Huszár
-                case "♘": // Huszár
+                case "♞":
+                case "♘": 
                     return ervenyesHuszarlap(kezdoX, kezdoY, celX, celY);
-                case "♝": // Futó
-                case "♗": // Futó
+                case "♝":
+                case "♗":
                     return ervenyesFutolepes(kezdoX, kezdoY, celX, celY);
-                case "♛": // Vezér
-                case "♕": // Vezér
+                case "♛":
+                case "♕":
                     return ervenyesVezerLepes(kezdoX, kezdoY, celX, celY);
-                case "♚": // Király
-                case "♔": // Király
+                case "♚":
+                case "♔":
                     return ervenyesKiralylepes(kezdoX, kezdoY, celX, celY);
                 default:
                     return false;
@@ -233,7 +232,6 @@
             const dy = Math.abs(celY - kezdoY);
             if (dx !== dy) return false;
 
-            // Ellenőrizni kell, hogy az út akadálymentes-e
             const stepX = (celX - kezdoX) / dx;
             const stepY = (celY - kezdoY) / dy;
             let x = kezdoX + stepX;
@@ -259,17 +257,14 @@
         }
 
         function ujJatek() {
-            // Reset the game state
-            tabla = JSON.parse(JSON.stringify(eredetiTabla)); // Reset to original table
+            tabla = JSON.parse(JSON.stringify(eredetiTabla));
             leutottFeherBabuk = [];
             leutottFeketeBabuk = [];
             kivalasztottBabu = null;
             kivalasztottKoordinata = null;
             kiemeltMezok = [];
-            tablaMegjelenitese(); // Refresh the display
+            tablaMegjelenitese();
         }
-
-        // Kezdeti megjelenítés
         tablaMegjelenitese();
     </script>
 </body>
