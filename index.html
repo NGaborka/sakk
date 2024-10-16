@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: lightcyan;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 2em;
+            cursor: pointer;
+        }
+        .feher {
+            background-color: white;
+        }
+        .fekete {
+            background-color: black;
+            color: white;
+        }
+        .kiemelt {
+            background-color: yellow !important;
+        }
+        table {
+            border: 1px solid black;
+        }
+        .leutott-babuk-container {
+            display: flex;
+            flex-direction: column;
+            margin-left: 20px;
+        }
+        .leutott-babuk {
+            border: 1px solid black;
+            padding: 10px;
+            margin-bottom: 20px;
+            min-width: 100px;
+            min-height: 50px;
+        }
+        .leutott-babuk h3 {
+            margin: 0 0 10px;
+        }
+        .uj-jatek-gomb {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div style="display: flex;">
+        <table id="sakkTabla"></table>
+
+        <div class="leutott-babuk-container">
+            <div class="leutott-babuk">
+                <h3>Leütött bábuk</h3>
+                <div id="feherBabuk"></div>
+                <div id="feketeBabuk"></div>
+            </div>
+        </div>
+    </div>
+
+    <button class="uj-jatek-gomb" onclick="ujJatek()">Új játék</button>
+
+    <script>
+        const eredetiTabla = [
+            ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"],
+            ["♟", "♟", "♟", "♟", "♟", "♟", "♟", "♟"],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["♙", "♙", "♙", "♙", "♙", "♙", "♙", "♙"],
+            ["♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"]
+        ];
+
+        let tabla = JSON.parse(JSON.stringify(eredetiTabla)); // Deep copy of the original table
+        let leutottFeherBabuk = [];
+        let leutottFeketeBabuk = [];
+
+        const sakkTabla = document.getElementById("sakkTabla");
+        const feherBabukElem = document.getElementById("feherBabuk");
+        const feketeBabukElem = document.getElementById("feketeBabuk");
+
+        let kivalasztottBabu = null;
+        let kivalasztottKoordinata = null;
+        let kiemeltMezok = [];
+
+        function tablaMegjelenitese() {
+            sakkTabla.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const sor = document.createElement("tr");
+                for (let j = 0; j < 8; j++) {
+                    const mezo = document.createElement("td");
+                    mezo.textContent = tabla[i][j];
+                    mezo.className = (i + j) % 2 === 0 ? "feher" : "fekete";
+
+                    if (kiemeltMezok.some(([x, y]) => x === i && y === j)) {
+                        mezo.classList.add("kiemelt");
+                    }
+
+                    mezo.addEventListener("click", () => mezoKattintas(i, j));
+                    sor.appendChild(mezo);
+                }
+                sakkTabla.appendChild(sor);
+            }
+            leutottBabukMegjelenitese();
+        }
+
+        function mezoKattintas(i, j) {
+            if (kivalasztottBabu) {
+                if (ervenyesLepes(kivalasztottKoordinata[0], kivalasztottKoordinata[1], i, j)) {
+                    if (tabla[i][j] !== "") {
+                        leutottBabuHozzaadasa(tabla[i][j]);
+                    }
+                    tabla[i][j] = kivalasztottBabu;
+                    tabla[kivalasztottKoordinata[0]][kivalasztottKoordinata[1]] = "";
+                    kivalasztottBabu = null;
+                    kivalasztottKoordinata = null;
+                    kiemeltMezok = [];
+                }
+            } else {
+                if (tabla[i][j] !== "") {
+                    kivalasztottBabu = tabla[i][j];
+                    kivalasztottKoordinata = [i, j];
+                    kiemeltMezok = lepesekMegjelenitese(i, j);
+                }
+            }
+            tablaMegjelenitese();
+        }
+
+        function ervenyesLepes(kezdoX, kezdoY, celX, celY) {
+            const babu = tabla[kezdoX][kezdoY];
+            const celMezo = tabla[celX][celY];
+
+            // Nem léphet ugyanarra a színre
+            if (babu.toUpperCase() === celMezo.toUpperCase()) return false;
+
+            switch (babu) {
+                case "♙": // Fehér gyalog
+                case "♟": // Fekete gyalog
+                    return ervenyesGyalogLepes(kezdoX, kezdoY, celX, celY, babu);
+                case "♜": // Bástya
+                case "♖": // Bástya
+                    return ervenyesBastyaLepes(kezdoX, kezdoY, celX, celY);
+                case "♞": // Huszár
+                case "♘": // Huszár
+                    return ervenyesHuszarlap(kezdoX, kezdoY, celX, celY);
+                case "♝": // Futó
+                case "♗": // Futó
+                    return ervenyesFutolepes(kezdoX, kezdoY, celX, celY);
+                case "♛": // Vezér
+                case "♕": // Vezér
+                    return ervenyesVezerLepes(kezdoX, kezdoY, celX, celY);
+                case "♚": // Király
+                case "♔": // Király
+                    return ervenyesKiralylepes(kezdoX, kezdoY, celX, celY);
+                default:
+                    return false;
+            }
+        }
+
+        function leutottBabuHozzaadasa(babu) {
+            if (babu === babu.toUpperCase()) {
+                leutottFeketeBabuk.push(babu);
+            } else {
+                leutottFeherBabuk.push(babu);
+            }
+        }
+
+        function leutottBabukMegjelenitese() {
+            feherBabukElem.innerHTML = leutottFeherBabuk.join(' ');
+            feketeBabukElem.innerHTML = leutottFeketeBabuk.join(' ');
+        }
+
+        function lepesekMegjelenitese(x, y) {
+            const lehetsegesLepesek = [];
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (ervenyesLepes(x, y, i, j)) {
+                        lehetsegesLepesek.push([i, j]);
+                    }
+                }
+            }
+            return lehetsegesLepesek;
+        }
+
+        function ervenyesGyalogLepes(kezdoX, kezdoY, celX, celY, babu) {
+            const irany = babu === "♙" ? -1 : 1;
+            if (kezdoY === celY && tabla[celX][celY] === "") {
+                return (celX - kezdoX === irany) || 
+                       (kezdoX === (babu === "♙" ? 6 : 1) && celX - kezdoX === 2 * irany);
+            } else if (Math.abs(kezdoY - celY) === 1 && celX - kezdoX === irany) {
+                return tabla[celX][celY] !== "";
+            }
+            return false;
+        }
+
+        function ervenyesBastyaLepes(kezdoX, kezdoY, celX, celY) {
+            if (kezdoX !== celX && kezdoY !== celY) return false;
+
+            if (kezdoX === celX) {
+                for (let j = Math.min(kezdoY, celY) + 1; j < Math.max(kezdoY, celY); j++) {
+                    if (tabla[kezdoX][j] !== "") return false;
+                }
+            } else {
+                for (let i = Math.min(kezdoX, celX) + 1; i < Math.max(kezdoX, celX); i++) {
+                    if (tabla[i][kezdoY] !== "") return false;
+                }
+            }
+            return true;
+        }
+
+        function ervenyesHuszarlap(kezdoX, kezdoY, celX, celY) {
+            const dx = Math.abs(celX - kezdoX);
+            const dy = Math.abs(celY - kezdoY);
+            return (dx === 2 && dy === 1) || (dx === 1 && dy === 2);
+        }
+
+        function ervenyesFutolepes(kezdoX, kezdoY, celX, celY) {
+            const dx = Math.abs(celX - kezdoX);
+            const dy = Math.abs(celY - kezdoY);
+            if (dx !== dy) return false;
+
+            // Ellenőrizni kell, hogy az út akadálymentes-e
+            const stepX = (celX - kezdoX) / dx;
+            const stepY = (celY - kezdoY) / dy;
+            let x = kezdoX + stepX;
+            let y = kezdoY + stepY;
+
+            while (x !== celX && y !== celY) {
+                if (tabla[x][y] !== "") return false;
+                x += stepX;
+                y += stepY;
+            }
+            return true;
+        }
+
+        function ervenyesVezerLepes(kezdoX, kezdoY, celX, celY) {
+            return ervenyesBastyaLepes(kezdoX, kezdoY, celX, celY) || 
+                   ervenyesFutolepes(kezdoX, kezdoY, celX, celY);
+        }
+
+        function ervenyesKiralylepes(kezdoX, kezdoY, celX, celY) {
+            const dx = Math.abs(celX - kezdoX);
+            const dy = Math.abs(celY - kezdoY);
+            return (dx <= 1 && dy <= 1);
+        }
+
+        function ujJatek() {
+            // Reset the game state
+            tabla = JSON.parse(JSON.stringify(eredetiTabla)); // Reset to original table
+            leutottFeherBabuk = [];
+            leutottFeketeBabuk = [];
+            kivalasztottBabu = null;
+            kivalasztottKoordinata = null;
+            kiemeltMezok = [];
+            tablaMegjelenitese(); // Refresh the display
+        }
+
+        // Kezdeti megjelenítés
+        tablaMegjelenitese();
+    </script>
+</body>
+</html>
